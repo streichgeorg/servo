@@ -6,12 +6,10 @@
 
 use cssparser::{Parser, Token};
 use parser::{Parse, ParserContext};
-#[cfg(feature = "servo")]
-use properties::{longhands, PropertyDeclaration};
 use selectors::parser::SelectorParseErrorKind;
 #[allow(unused_imports)] use std::ascii::AsciiExt;
-use std::fmt;
-use style_traits::{ParseError, StyleParseErrorKind, ToCss};
+use std::fmt::{self, Write};
+use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
 use values::computed::{Context, ToComputedValue};
 use values::computed::text::LineHeight as ComputedLineHeight;
 use values::computed::text::TextOverflow as ComputedTextOverflow;
@@ -232,7 +230,7 @@ impl ToComputedValue for TextOverflow {
     #[inline]
     fn from_computed_value(computed: &Self::ComputedValue) -> Self {
         if computed.sides_are_logical {
-            assert!(computed.first == TextOverflowSide::Clip);
+            assert_eq!(computed.first, TextOverflowSide::Clip);
             TextOverflow {
                 first: computed.second.clone(),
                 second: None,
@@ -281,13 +279,6 @@ impl TextDecorationLine {
     pub fn none() -> Self {
         TextDecorationLine::NONE
     }
-
-    #[cfg(feature = "servo")]
-    #[inline]
-    /// Custom cascade for the text-decoration-line property in servo
-    pub fn cascade_property_custom(_declaration: &PropertyDeclaration, context: &mut Context) {
-        longhands::_servo_text_decorations_in_effect::derive_from_text_decoration(context);
-    }
 }
 
 impl Parse for TextDecorationLine {
@@ -302,8 +293,9 @@ impl Parse for TextDecorationLine {
         }
 
         loop {
-            let result: Result<_, ParseError> = input.try(|input| {
-                try_match_ident_ignore_ascii_case! { input,
+            let result = input.try(|input| {
+                let ident = input.expect_ident().map_err(|_| ())?;
+                match_ignore_ascii_case! { ident,
                     "underline" => {
                         if result.contains(TextDecorationLine::UNDERLINE) {
                             Err(())
@@ -336,6 +328,7 @@ impl Parse for TextDecorationLine {
                             Ok(())
                         }
                     }
+                    _ => Err(()),
                 }
             });
             if result.is_err() {
@@ -449,7 +442,10 @@ impl Parse for TextAlign {
 }
 
 impl ToCss for TextAlign {
-    fn to_css<W>(&self, dest: &mut W) -> fmt::Result where W: fmt::Write {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
         match *self {
             TextAlign::Keyword(key) => key.to_css(dest),
             #[cfg(feature = "gecko")]

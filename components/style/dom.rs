@@ -31,29 +31,10 @@ use std::fmt;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::ops::Deref;
-use stylist::{StyleRuleCascadeData, Stylist};
+use stylist::{CascadeData, Stylist};
 use traversal_flags::TraversalFlags;
 
-/// An opaque handle to a node, which, unlike UnsafeNode, cannot be transformed
-/// back into a non-opaque representation. The only safe operation that can be
-/// performed on this node is to compare it to another opaque handle or to another
-/// OpaqueNode.
-///
-/// Layout and Graphics use this to safely represent nodes for comparison purposes.
-/// Because the script task's GC does not trace layout, node data cannot be safely stored in layout
-/// data structures. Also, layout code tends to be faster when the DOM is not being accessed, for
-/// locality reasons. Using `OpaqueNode` enforces this invariant.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf, Deserialize, Serialize))]
-pub struct OpaqueNode(pub usize);
-
-impl OpaqueNode {
-    /// Returns the address of this node, for debugging purposes.
-    #[inline]
-    pub fn id(&self) -> usize {
-        self.0
-    }
-}
+pub use style_traits::OpaqueNode;
 
 /// Simple trait to provide basic information about the type of an element.
 ///
@@ -419,12 +400,6 @@ pub trait TElement
     /// Return whether this element is an element in the HTML namespace.
     fn is_html_element(&self) -> bool;
 
-    /// Returns whether this element is a <html:slot> element.
-    fn is_html_slot_element(&self) -> bool {
-        self.get_local_name() == &*local_name!("slot") &&
-        self.is_html_element()
-    }
-
     /// Return the list of slotted nodes of this node.
     fn slotted_nodes(&self) -> &[Self::ConcreteNode] {
         &[]
@@ -680,7 +655,7 @@ pub trait TElement
     /// Whether we should skip any root- or item-based display property
     /// blockification on this element.  (This function exists so that Gecko
     /// native anonymous content can opt out of this style fixup.)
-    fn skip_root_and_item_based_display_fixup(&self) -> bool;
+    fn skip_item_display_fixup(&self) -> bool;
 
     /// Sets selector flags, which indicate what kinds of selectors may have
     /// matched on this element and therefore what kind of work may need to
@@ -746,18 +721,9 @@ pub trait TElement
     /// element-backed pseudo-element, in which case we return the originating
     /// element.
     fn rule_hash_target(&self) -> Self {
-        if let Some(pseudo) = self.implemented_pseudo_element() {
-            match self.closest_non_native_anonymous_ancestor() {
-                Some(e) => e,
-                None => {
-                    panic!(
-                        "Trying to collect rules for a detached pseudo-element: \
-                        {:?} {:?}",
-                        pseudo,
-                        self,
-                    )
-                }
-            }
+        if self.implemented_pseudo_element().is_some() {
+            self.closest_non_native_anonymous_ancestor()
+                .expect("Trying to collect rules for a detached pseudo-element")
         } else {
             *self
         }
@@ -781,12 +747,12 @@ pub trait TElement
     fn each_applicable_non_document_style_rule_data<'a, F>(&self, mut f: F) -> bool
     where
         Self: 'a,
-        F: FnMut(AtomicRef<'a, StyleRuleCascadeData>, QuirksMode),
+        F: FnMut(AtomicRef<'a, CascadeData>, QuirksMode),
     {
         let cut_off_inheritance = self.each_xbl_stylist(|stylist| {
             let quirks_mode = stylist.quirks_mode();
             f(
-                AtomicRef::map(stylist, |stylist| stylist.normal_author_cascade_data()),
+                AtomicRef::map(stylist, |stylist| stylist.author_cascade_data()),
                 quirks_mode,
             )
         });
@@ -795,12 +761,10 @@ pub trait TElement
         while let Some(slot) = current {
             slot.each_xbl_stylist(|stylist| {
                 let quirks_mode = stylist.quirks_mode();
-                if stylist.slotted_author_cascade_data().is_some() {
-                    f(
-                        AtomicRef::map(stylist, |stylist| stylist.slotted_author_cascade_data().unwrap()),
-                        quirks_mode,
-                    )
-                }
+                f(
+                    AtomicRef::map(stylist, |stylist| stylist.author_cascade_data()),
+                    quirks_mode,
+                )
             });
 
             current = slot.assigned_slot();

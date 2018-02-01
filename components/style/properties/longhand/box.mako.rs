@@ -20,8 +20,6 @@ ${helpers.predefined_type(
     initial_specified_value="specified::Display::inline()",
     animation_value_type="discrete",
     needs_context=False,
-    custom_cascade= product == 'servo',
-    custom_cascade_function="specified::Display::cascade_property_custom",
     flags="APPLIES_TO_PLACEHOLDER",
     spec="https://drafts.csswg.org/css-display/#propdef-display",
 )}
@@ -160,27 +158,6 @@ ${helpers.single_keyword("position", "static absolute relative fixed sticky",
         }
     }
 </%helpers:single_keyword_computed>
-
-<%helpers:longhand name="-servo-display-for-hypothetical-box"
-                   animation_value_type="none"
-                   derived_from="display"
-                   products="servo"
-                   spec="Internal (not web-exposed)">
-    pub use super::display::{SpecifiedValue, get_initial_value};
-    pub use super::display::{parse};
-
-    pub mod computed_value {
-        pub type T = super::SpecifiedValue;
-    }
-
-    #[inline]
-    pub fn derive_from_display(context: &mut Context) {
-        let d = context.style().get_box().clone_display();
-        context.builder.set__servo_display_for_hypothetical_box(d);
-    }
-
-</%helpers:longhand>
-
 
 ${helpers.predefined_type(
     "vertical-align",

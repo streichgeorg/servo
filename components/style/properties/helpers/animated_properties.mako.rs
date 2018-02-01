@@ -27,9 +27,9 @@ use selectors::parser::SelectorParseErrorKind;
 use servo_arc::Arc;
 use smallvec::SmallVec;
 use std::cmp;
-use std::fmt;
+use std::fmt::{self, Write};
 #[cfg(feature = "gecko")] use hash::FnvHashMap;
-use style_traits::{ParseError, ToCss};
+use style_traits::{CssWriter, ParseError, ToCss};
 use super::ComputedValues;
 use values::{CSSFloat, CustomIdent, Either};
 use values::animated::{Animate, Procedure, ToAnimatedValue, ToAnimatedZero};
@@ -94,7 +94,10 @@ pub enum TransitionProperty {
 }
 
 impl ToCss for TransitionProperty {
-    fn to_css<W>(&self, dest: &mut W) -> fmt::Result where W: fmt::Write {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
         match *self {
             TransitionProperty::All => dest.write_str("all"),
             TransitionProperty::Shorthand(ref id) => dest.write_str(id.name()),
@@ -178,7 +181,7 @@ impl From<nsCSSPropertyID> for TransitionProperty {
             % endfor
             nsCSSPropertyID::eCSSPropertyExtra_all_properties => TransitionProperty::All,
             _ => {
-                panic!("non-convertible nsCSSPropertyID::{:?}", property)
+                panic!("non-convertible nsCSSPropertyID")
             }
         }
     }
@@ -552,7 +555,7 @@ impl Animate for AnimationValue {
             % endif
             % endfor
             _ => {
-                panic!("Unexpected AnimationValue::animate call, got: {:?}, {:?}", self, other);
+                panic!("Unexpected AnimationValue::animate call");
             }
         };
         Ok(value)
@@ -582,11 +585,7 @@ impl ComputeSquaredDistance for AnimationValue {
             % endif
             % endfor
             _ => {
-                panic!(
-                    "computed values should be of the same property, got: {:?}, {:?}",
-                    self,
-                    other
-                );
+                panic!("computed values should be of the same property");
             },
         }
     }

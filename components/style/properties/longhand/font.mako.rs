@@ -74,15 +74,15 @@ ${helpers.predefined_type("font-synthesis",
                           spec="https://drafts.csswg.org/css-fonts/#propdef-font-synthesis")}
 
 ${helpers.single_keyword_system("font-stretch",
-                                "normal ultra-condensed extra-condensed condensed \
-                                 semi-condensed semi-expanded expanded extra-expanded \
-                                 ultra-expanded",
-                                gecko_ffi_name="mFont.stretch",
-                                gecko_constant_prefix="NS_FONT_STRETCH",
-                                cast_type='i16',
-                                spec="https://drafts.csswg.org/css-fonts/#propdef-font-stretch",
-                                flags="APPLIES_TO_FIRST_LETTER APPLIES_TO_FIRST_LINE APPLIES_TO_PLACEHOLDER",
-                                animation_value_type="ComputedValue")}
+                          "normal ultra-condensed extra-condensed condensed \
+                          semi-condensed semi-expanded expanded extra-expanded \
+                          ultra-expanded",
+                          gecko_ffi_name="mFont.stretch",
+                          gecko_constant_prefix="NS_FONT_STRETCH",
+                          cast_type='i16',
+                          spec="https://drafts.csswg.org/css-fonts/#propdef-font-stretch",
+                          flags="APPLIES_TO_FIRST_LETTER APPLIES_TO_FIRST_LINE APPLIES_TO_PLACEHOLDER",
+                          animation_value_type="ComputedValue")}
 
 ${helpers.single_keyword_system("font-kerning",
                                 "auto none normal",

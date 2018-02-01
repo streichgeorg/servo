@@ -20,8 +20,7 @@ use platform::font_template::FontTemplateData;
 use std::{mem, ptr};
 use std::os::raw::{c_char, c_long};
 use std::sync::Arc;
-use style::computed_values::font_stretch::T as FontStretch;
-use style::computed_values::font_weight::T as FontWeight;
+use style_traits::values::font::{FontWeight, FontStretch};
 use super::c_str_to_string;
 use text::glyph::GlyphId;
 use text::util::fixed_to_float;
@@ -322,7 +321,7 @@ impl<'a> FontHandle {
         let x_scale = (metrics.x_ppem as f64) / em_size as f64;
 
         // If this isn't true then we're scaling one of the axes wrong
-        assert!(metrics.x_ppem == metrics.y_ppem);
+        assert_eq!(metrics.x_ppem, metrics.y_ppem);
 
         Au::from_f64_px(value * x_scale)
     }

@@ -7,15 +7,11 @@
 use Atom;
 use cssparser::Parser;
 use parser::{Parse, ParserContext};
-#[cfg(feature = "servo")]
-use properties::{longhands, PropertyDeclaration};
 use selectors::parser::SelectorParseErrorKind;
-use std::fmt;
-use style_traits::{ParseError, ToCss, StyleParseErrorKind};
+use std::fmt::{self, Write};
+use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
 use values::CustomIdent;
 use values::KeyframesName;
-#[cfg(feature = "servo")]
-use values::computed::Context;
 use values::generics::box_::AnimationIterationCount as GenericAnimationIterationCount;
 use values::generics::box_::VerticalAlign as GenericVerticalAlign;
 use values::specified::{AllowQuirks, Number};
@@ -221,15 +217,10 @@ impl Display {
         }
     }
 
-    #[cfg(feature = "servo")]
+    /// Returns true if the value is `None`
     #[inline]
-    /// Custom cascade for the `display` property in servo
-    pub fn cascade_property_custom(
-        _declaration: &PropertyDeclaration,
-        context: &mut Context
-    ) {
-        longhands::_servo_display_for_hypothetical_box::derive_from_display(context);
-        longhands::_servo_text_decorations_in_effect::derive_from_display(context);
+    pub fn is_none(&self) -> bool {
+        *self == Display::None
     }
 }
 
@@ -304,9 +295,9 @@ impl AnimationName {
 }
 
 impl ToCss for AnimationName {
-    fn to_css<W>(&self, dest: &mut W) -> fmt::Result
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where
-        W: fmt::Write,
+        W: Write,
     {
         match self.0 {
             Some(ref name) => name.to_css(dest),
@@ -422,7 +413,10 @@ impl TouchAction {
 }
 
 impl ToCss for TouchAction {
-    fn to_css<W>(&self, dest: &mut W) -> fmt::Result where W: fmt::Write {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
         match *self {
             TouchAction::TOUCH_ACTION_NONE => dest.write_str("none"),
             TouchAction::TOUCH_ACTION_AUTO => dest.write_str("auto"),
@@ -512,7 +506,10 @@ bitflags! {
 }
 
 impl ToCss for Contain {
-    fn to_css<W>(&self, dest: &mut W) -> fmt::Result where W: fmt::Write {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
         if self.is_empty() {
             return dest.write_str("none")
         }

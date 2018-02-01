@@ -21,8 +21,7 @@ use platform::macos::font_context::FontContextHandle;
 use std::{fmt, ptr};
 use std::ops::Range;
 use std::sync::Arc;
-use style::computed_values::font_stretch::T as FontStretch;
-use style::computed_values::font_weight::T as FontWeight;
+use style_traits::values::font::{FontWeight, FontStretch};
 use text::glyph::GlyphId;
 
 const KERN_PAIR_LEN: usize = 6;
@@ -247,7 +246,7 @@ impl FontHandleMethods for FontHandle {
             return None;
         }
 
-        assert!(glyphs[0] != 0); // FIXME: error handling
+        assert_ne!(glyphs[0], 0); // FIXME: error handling
         return Some(glyphs[0] as GlyphId);
     }
 
